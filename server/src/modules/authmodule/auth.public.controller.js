@@ -93,10 +93,8 @@ export const register = async (req, res) => {
             { expiresIn: '15m' }
         )
 
-        const verify_token_expires_at = new Date(Date.now() + 15 * 60 * 1000);
-
         // inserting into db
-        const [result] = await db.query(`INSERT INTO users (userId, name, username, email, password, verify_token, verify_token_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, [userId, name, sanitized_username, sanitized_email, hashedPassword, verify_token, verify_token_expires_at]);
+        const [result] = await db.query(`INSERT INTO users (userId, name, username, email, password, verify_token) VALUES (?, ?, ?, ?, ?, ?)`, [userId, name, sanitized_username, sanitized_email, hashedPassword, verify_token]);
 
         // inserting user log activity
         const ip_address = req.id || 'Unknown'
@@ -125,9 +123,62 @@ export const register = async (req, res) => {
 
 export const verify_email = async (req, res) => {
 
+    const { token } = req.query
+    
+    if (!token) {
+        return res.status(400).json({
+            success: false,
+            message: 'Verification token is required.'
+        })
+    }
+
     try {
         
+        // decoding jwt token
+        const decoded = jwt.verify(token, process.env.JWT_EMAIL_SECRET)
+
+        // assigning the values
+        const { userId, email } = decoded
+        
+        // checking for existing user
+        const [rows] = await db.query(`SELECT * FROM users WHERE userId = ? AND email = ?`, [userId, email])
+
+        if (rows.length === 0){
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            })
+        }
+
+        // checking for verification status
+        const user = rows[0]
+        if (user.is_email_verified){
+            return res.status(400).json({
+                success: false,
+                message: 'Email already verified.'
+            })
+        }
+
+        await db.query(`UPDATE users SET is_email_verified = true, verify_token = NULL WHERE userId = ?`, [userId])
+
+        const ip_address = req.ip || 'Unknown'
+        const user_agent = req.headers['user-agent'] || 'Unknown'
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'EMAIL_VERIFIED', 'Email verified successfully.', ip_address, user_agent])
+
+        return res.status(200).json({
+            success: true,
+            message: 'Email verified successfully.'
+        })
+
+        
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Verification link has expired.'
+            })
+        }
+
         return res.status(500).json({
             success: false,
             message: error.message

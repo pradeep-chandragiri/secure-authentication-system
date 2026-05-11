@@ -1,6 +1,6 @@
 import express from 'express'
 import { protect } from '../../middlewares/auth.middleware.js'
-import { forgot_password, login, register, reset_password } from './auth.public.controller.js'
+import { forgot_password, login, register, reset_password, verify_email } from './auth.public.controller.js'
 import { delete_account, logout } from './auth.protect.controller.js'
 
 const authrouter = express.Router()
@@ -8,6 +8,9 @@ const authrouter = express.Router()
 // auth public routes
 // POST api/auth/v1/accounts/new
 authrouter.post('/new', register)
+
+// PUT api/auth/v1/accounts/verify/email
+authrouter.put('/verify/email', verify_email)
 
 // POST api/auth/v1/accounts/login
 authrouter.post('/login', login)
