@@ -188,8 +188,74 @@ export const verify_email = async (req, res) => {
 }
 
 export const login = async (req, res) => {
+
+    const { identifier, password } = req.body
     
+    if (!identifier || !password){
+        return res.status(400).json({
+            success: false,
+            message: 'Required fields are missing.'
+        })
+    }
+
     try {
+
+        const sanitized_identifier = identifier.trim().toLowerCase()
+
+        // check whether the user exists or not
+        const [rows] = await db.query(`SELECT * FROM users WHERE email = ? OR username = ?`, [sanitized_identifier, sanitized_identifier])
+
+        if (rows.length === 0){
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid credentials. Verify your credentials and try again.'
+            })
+        }
+
+        const user = rows[0]
+
+        // Checking user ac verified or not
+        if (!user.is_email_verified) {
+            return res.status(403).json({
+                success: false,
+                message: 'Please verify your account before signing in.'
+            })
+        }
+
+        // password checking
+        const hashedPassword = user.password
+        const isMatch = await bcrypt.compare(password, hashedPassword)
+        if (!isMatch){
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid credentials. Please try again.'
+            })
+        }
+
+        // UPDATING USER LOGGED IN STATUS
+        await db.query(`UPDATE users SET last_login_at = NOW() WHERE userId = ?`, [user.userId])
+
+        // INSERTING USER LOG ACTIVITY
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [user.userId, 'LOGGED_IN', 'Logged in successfully', req.ip || 'Unknown', req.headers['user-agent'] || 'Unknown'])
+
+        // TOKEN CREATION
+        const token = jwt.sign(
+            { userId: user.userId, username: user.username, email: user.email }, // PAYLOAD
+            process.env.JWT_SECRET_KEY, // JWT SECRET
+            { expiresIn: process.env.JWT_EXPIRES_IN } // EXPIRATION TIME
+        )
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Successfully signed in to your account.'
+        })
         
     } catch (error) {
         return res.status(500).json({
