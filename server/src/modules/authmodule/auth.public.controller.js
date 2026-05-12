@@ -268,7 +268,50 @@ export const login = async (req, res) => {
 
 export const forgot_password = async (req, res) => {
     
+    const { identifier } = req.body
+
+    if (!identifier){
+        return res.status(400).json({
+            success: false,
+            message: 'Required fields are missing.'
+        })
+    }
+
     try {
+
+        // sanitize identifier
+        const sanitized_identifier = identifier.trim().toLowerCase()
+
+        // check for an account based on identifier
+        const [rows] = await db.query(`SELECT userId, email, username FROM users WHERE username = ? OR email = ?`, [sanitized_identifier, sanitized_identifier])
+
+        if (rows.length === 0){
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid credentials. Verify your credentials and try again.'
+            })
+        }
+
+        const user = rows[0]
+
+        // Reset Password Token Creation
+        const resetToken = jwt.sign(
+            { userId: user.userId, email: user.email, username: user.username },
+            process.env.JWT_PASSWORD_RESET_SECRET,
+            { expiresIn: '15m' }
+        )
+
+        res.cookie('resetToken', resetToken, {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 15 * 60 * 1000
+        })
+
+        return res.status(200).json({
+            success: true,
+            message: 'Account verified! Proceed to reset password.'
+        })
         
     } catch (error) {
         return res.status(500).json({
@@ -281,9 +324,101 @@ export const forgot_password = async (req, res) => {
 
 export const reset_password = async (req, res) => {
     
+    const { password } = req.body
+
+    if (!password){
+        return res.status(400).json({
+            success: false,
+            message: 'Required fields are missing.'
+        })
+    }
+
     try {
+
+        const resetToken = req.cookies.resetToken
+
+        if (!resetToken){
+            return res.status(401).json({
+                success: false,
+                message: 'Reset session not found or expired.'
+            })
+        }
+
+        const [existing_token] = await db.query(`SELECT token from blacklisted_tokens WHERE token = ?`, [resetToken])
+
+        if (existing_token.length > 0){
+            return res.status(401).json({
+                success: false,
+                message: 'This password reset session has expired or has already been completed.'
+            })
+        }
+
+        // decoding token
+        const decoded = jwt.verify(resetToken, process.env.JWT_PASSWORD_RESET_SECRET)
+        const user = decoded
+
+        // validate password
+        // password verification
+        const password_regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_#^()[\]{}\-+=~`|:;"'<>,./\\])[A-Za-z\d@$!%*?&_#^()[\]{}\-+=~`|:;"'<>,./\\]{8,64}$/;
+        if (!password_regex.test(password)){
+            return res.status(400).json({
+                success: false,
+                message: 'Password must contain uppercase, lowercase, number, and special character.'
+            })
+        }
+
+        // checking whether the stored and new password are same or not
+        const [rows] = await db.query(`SELECT password FROM users WHERE userId = ?`, [user.userId])
+
+        if (rows.length === 0){
+            return res.status(404).json({
+                success: false,
+                message: 'Account not found.'
+            })
+        }
+
+        const existingUser = rows[0]
+        const isSamePassword = await bcrypt.compare(password, existingUser.password)
+
+        if (isSamePassword){
+            return res.status(400).json({
+                success: false,
+                message: 'New password cannot be the same as your current password.'
+            })
+        }
+
+        // password hashing
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        // update password in user table
+        await db.query(`UPDATE users SET password = ? WHERE userId = ?`, [hashedPassword, user.userId])
         
+        // insert into activity log
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [user.userId, 'PASSWORD_CHANGE', 'Password changed successfully', req.ip || 'Unknown', req.headers['user-agent'] || 'Unknown'])
+
+        // Inserting the used token into blacklist
+        await db.query(`INSERT INTO blacklisted_tokens (token) VALUES (?)`, [resetToken])
+
+        // token clearing from the cookies
+        res.clearCookie('resetToken')
+        
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated. You can now log in with your new password.'
+        })        
+
     } catch (error) {
+
+        if (error.name === 'TokenExpiredError') {
+            res.clearCookie('resetToken')
+
+            return res.status(401).json({ 
+                success: false,
+                message: 'Token expired, please follow the procedure again to reset your password.' 
+            })
+        }
+
         return res.status(500).json({
             success: false,
             message: error.message
