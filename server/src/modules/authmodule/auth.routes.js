@@ -10,8 +10,8 @@ const authrouter = express.Router()
 // POST api/auth/v1/accounts/new
 authrouter.post('/new', register)
 
-// PUT api/auth/v1/accounts/verify/email
-authrouter.put('/verify/email', verify_email)
+// POST api/auth/v1/accounts/verify/email
+authrouter.get('/verify/email', verify_email)
 
 // POST api/auth/v1/accounts/login
 authrouter.post('/login', authLimiter, loginLimiter, login)

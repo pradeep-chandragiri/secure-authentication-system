@@ -1,4 +1,5 @@
 import db from '../../configs/mysqldb.js'
+import { sendAccountedDeletedEmail } from '../../services/emailService.js'
 
 export const logout = async (req, res) => {
     
@@ -78,6 +79,8 @@ export const delete_account = async (req, res) => {
         await db.query(`DELETE FROM user_activity_logs WHERE userId = ?`, [userId])
         
         res.clearCookie('token')
+
+        await sendAccountedDeletedEmail({ email: req.user.email })
 
         return res.status(200).json({
             success: true,

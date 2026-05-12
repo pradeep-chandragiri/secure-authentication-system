@@ -2,6 +2,7 @@ import db from '../../configs/mysqldb.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { generate_user_id } from '../../utils/userIdgenerator.util.js'
+import { sendAccountCreatedEmail, sendLoginEmail, sendVerifyEmail } from '../../services/emailService.js'
 
 export const register = async (req, res) => {
     
@@ -101,6 +102,10 @@ export const register = async (req, res) => {
         const user_agent = req.headers['user-agent'] || 'Unknown'
         await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'ACCOUNT_CREATED', 'Account created successfully.', ip_address, user_agent])
 
+
+        // email sending
+        await sendVerifyEmail({ email: sanitized_email, verify_token })
+
         return res.status(201).json({
             success: true,
             message: 'Account created successfully. Please verify your email using the verification link sent to you.',
@@ -164,6 +169,14 @@ export const verify_email = async (req, res) => {
         const ip_address = req.ip || 'Unknown'
         const user_agent = req.headers['user-agent'] || 'Unknown'
         await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'EMAIL_VERIFIED', 'Email verified successfully.', ip_address, user_agent])
+
+        // email sending
+        // send email after DB update — wrapped so it doesn't crash the response
+        try {
+            await sendAccountCreatedEmail({ email: decoded.email })
+        } catch (err) {
+            console.error('Account created email failed:', err.message)
+        }
 
         return res.status(200).json({
             success: true,
@@ -252,6 +265,9 @@ export const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         
+         // email sending
+        await sendLoginEmail({ email: user.email, userAgent: req.headers['user-agent'], ip: req.ip })
+
         return res.status(200).json({
             success: true,
             message: 'Successfully signed in to your account.'
