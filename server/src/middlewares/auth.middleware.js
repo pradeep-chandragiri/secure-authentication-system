@@ -16,7 +16,7 @@ export const protect = async (req, res, next) => {
         }
 
         // 2. verifying blacklisted Token
-        const [blacklisted_token] = await db.query(`SELECT * FROM blacklisted_token WHERE token = ?`, [token])
+        const [blacklisted_token] = await db.query(`SELECT * FROM blacklisted_tokens WHERE token = ?`, [token])
 
         if(blacklisted_token.length > 0){
             return res.status(401).json({
@@ -41,6 +41,7 @@ export const protect = async (req, res, next) => {
                 message: 'Token expired, please login again' 
             })
         }
+
         return res.status(401).json({ 
             success: false,
             message: 'Invalid token' 

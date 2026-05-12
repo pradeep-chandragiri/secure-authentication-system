@@ -401,6 +401,7 @@ export const reset_password = async (req, res) => {
 
         // token clearing from the cookies
         res.clearCookie('resetToken')
+        res.clearCookie('token')
         
 
         res.status(200).json({
