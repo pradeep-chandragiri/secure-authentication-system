@@ -1,6 +1,9 @@
 import db from "../../configs/mysqldb.js"
 import bcrypt from 'bcryptjs'
+import { Readable } from 'stream'
+import crypto from 'crypto'
 import { formatActivity } from "../../utils/formatActivity.js"
+import cloudinary from '../../configs/cloudinary.js'
 
 export const get_profile = async (req, res) => {
     
@@ -180,6 +183,52 @@ export const get_user_activity = async (req, res) => {
 export const upload_profile_picture = async (req, res) => {
     
     try {
+
+        const userId = req.user.userId
+        
+        // 1. Check if file is sent
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            })
+        }
+
+        // Upload buffer directly to Cloudinary using stream
+        const uploadFromBuffer = () => {
+            return new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        folder    : `users/${req.user.userId}`,
+                        public_id : crypto.randomBytes(15).toString('hex'),
+                        overwrite : true,
+                    },
+                    (error, result) => {
+                        if (error) reject(error)
+                        else resolve(result)
+                    }
+                )
+                Readable.from(req.file.buffer).pipe(uploadStream)
+            })
+        }
+
+        const result = await uploadFromBuffer()
+
+        // Save URL to DB
+        await db.query(
+            `UPDATE users SET dp = ? WHERE userId = ?`,
+            [result.secure_url, userId]
+        )
+
+        // insert into log activity
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'PROFILE_PICTURE_UPDATE', 'Profile picture updated successfully', req.ip ? req.ip : 'Unknown', req.headers['user-agent'] ? req.headers['user-agent'] : 'Unknown'])
+
+        return res.status(200).json({
+            success : true,
+            message : 'Profile picture uploaded successfully',
+            url     : result.secure_url
+        })
+        
         
     } catch (error) {
         return res.status(500).json({
@@ -193,6 +242,40 @@ export const upload_profile_picture = async (req, res) => {
 export const delete_profile_picture = async (req, res) => {
     
     try {
+
+        const userId = req.user.userId
+
+        // 1. Get current dp from DB
+        const [rows] = await db.query(`SELECT dp FROM users WHERE userId = ?`, [userId])
+
+        const currentDp = rows[0]?.dp
+
+        if (!currentDp) {
+            return res.status(400).json({
+                success : false,
+                message : 'No profile picture to delete'
+            })
+        }
+
+        // 2. Extract public_id from Cloudinary URL
+        const urlParts  = currentDp.split('/')
+        const fileName  = urlParts.at(-1).split('.')[0]           // abc123
+        const folder    = `${urlParts.at(-3)}/${urlParts.at(-2)}` // users/101
+        const public_id = `${folder}/${fileName}`                 // users/101/abc123
+
+        // 3. Delete from Cloudinary
+        await cloudinary.uploader.destroy(public_id)
+
+        // 4. Remove URL from DB
+        await db.query(`UPDATE users SET dp = NULL WHERE userId = ?`, [userId])
+
+        // 5. Insert activity into Logs
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'PROFILE_PICTURE_DELETE', 'Profile picture removed successfully', req.ip ? req.ip : 'Unknown', req.headers['user-agent'] ? req.headers['user-agent'] : 'Unknown'])
+
+        return res.status(200).json({
+            success : true,
+            message : 'Profile picture deleted successfully'
+        })
         
     } catch (error) {
         return res.status(500).json({
