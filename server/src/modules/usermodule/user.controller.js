@@ -1,5 +1,6 @@
 import db from "../../configs/mysqldb.js"
 import bcrypt from 'bcryptjs'
+import { formatActivity } from "../../utils/formatActivity.js"
 
 export const get_profile = async (req, res) => {
     
@@ -138,6 +139,40 @@ export const update_profile = async (req, res) => {
             success: false,
             message: "Internal server error."
         });
+    }
+
+}
+
+export const get_user_activity = async (req, res) => {
+    
+    try {
+
+        const userId = req.user.userId
+
+        const [rows] = await db.query(`SELECT action_type, description, ip_address, user_agent, created_at FROM user_activity_logs WHERE userId = ?`, [userId])
+
+        // User not found
+        if (rows.length === 0){
+            return res.status(404).json({
+                success: false,
+                message: 'Requested information does not exist.'
+            })
+        }
+
+        // Extracting user
+        const log_activity = rows
+
+        return res.status(200).json({
+            success: true,
+            data: formatActivity(log_activity)
+        })
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error."
+        })
     }
 
 }

@@ -1,6 +1,6 @@
 import express from 'express'
 import { protect } from '../../middlewares/auth.middleware.js'
-import { change_password, delete_profile_picture, get_profile, update_profile, upload_profile_picture } from './user.controller.js'
+import { change_password, delete_profile_picture, get_profile, get_user_activity, update_profile, upload_profile_picture } from './user.controller.js'
 
 const userrouter = express.Router()
 
@@ -9,6 +9,9 @@ userrouter.get('/profile', protect, get_profile)
 
 // PUT api/accounts/profile
 userrouter.put('/profile', protect, update_profile)
+
+// GET api/accounts/activity
+userrouter.get('/activity', protect, get_user_activity)
 
 // PUT api/accounts/profile-picture
 userrouter.put('/profile-picture', protect, upload_profile_picture)
