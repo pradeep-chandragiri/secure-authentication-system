@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&family=Outfit:wght@100..900&display=swap');
+
+:root {
+    /* ── Colors ── */
+    --color-bg:              #ffffff;
+    --color-bg-subtle:       #f6f8fa;
+    --color-bg-input:        #f6f8fa;
+
+    --color-text:            #0d1117;
+    --color-text-muted:      #656d76;
+
+    --color-border:          #d0d7de;
+    --color-border-focus:    #0969da;
+
+    --color-accent:          #238636;
+    --color-accent-hover:    #2ea043;
+    --color-accent-text:     #ffffff;
+
+    --color-danger:          #cf222e;
+    --color-danger-subtle:   #fff0f0;
+
+    --color-success:         #1a7f37;
+    --color-success-subtle:  #dafbe1;
+
+
+    --color-black-strong: #0d1117;
+    --color-black-medium: #1c1c1e;
+    --color-black-light:  #2d2d2d;
+
+    /* ── Skeleton (Light mode — black family) ── */
+    --color-skeleton-bg:     #000000;
+    --color-skeleton-block:  #1a1a1a;
+    --color-skeleton-shine:  #2c2c2c;
+
+    /* ── Splash ── */
+    --color-splash-bg:       #000000;
+
+    /* ── Typography ── */
+    --font-sans:   "Outfit", sans-serif;
+    --font-mono:   "Outfit", sans-serif;
+
+    --text-xs:     0.75rem;    /* 12px */
+    --text-sm:     0.8125rem;  /* 13px */
+    --text-base:   0.9375rem;  /* 15px */
+    --text-md:     1rem;       /* 16px */
+    --text-lg:     1.125rem;   /* 18px */
+    --text-xl:     1.375rem;   /* 22px */
+    --text-2xl:    1.625rem;   /* 26px */
+
+    /* ── Spacing ── */
+    --space-1:   4px;
+    --space-2:   8px;
+    --space-3:   12px;
+    --space-4:   16px;
+    --space-5:   20px;
+    --space-6:   24px;
+    --space-8:   32px;
+    --space-10:  40px;
+
+    /* ── Border Radius ── */
+    --radius-sm:   4px;
+    --radius-md:   6px;
+    --radius-lg:   12px;
+    --radius-full: 9999px;
+
+    /* ── Shadows ── */
+    --shadow-sm:   0 1px 3px rgba(31, 35, 40, 0.12);
+    --shadow-md:   0 3px 6px rgba(31, 35, 40, 0.15);
+
+    /* ── Transitions ── */
+    --transition-fast:   0.15s ease;
+    --transition-base:   0.25s ease;
+    --transition-slow:   0.4s;
+}
+
+/* ── Dark Mode ── */
+@media(prefers-color-scheme: dark) {
+    :root{
+        --color-bg:              #0d1117;
+        --color-bg-subtle:       #161b22;
+        --color-bg-input:        #161b22;
+
+        --color-text:            #e6edf3;
+        --color-text-muted:      #8b949e;
+
+        --color-border:          #30363d;
+        --color-border-focus:    #58a6ff;
+
+        --color-accent:          #238636;
+        --color-accent-hover:    #2ea043;
+        --color-accent-text:     #ffffff;
+
+        --color-danger:          #ff7b72;
+        --color-danger-subtle:   #1a0000;
+
+        --color-success:         #3fb950;
+        --color-success-subtle:  #0f2d1a;
+
+        /* ── Skeleton (Dark mode — white family) ── */
+        --color-skeleton-bg:     #ffffff;
+        --color-skeleton-block:  #e8e8e8;
+        --color-skeleton-shine:  #f5f5f5;
+
+        /* ── Splash ── */
+        --color-splash-bg:       #ffffff;
+    }
+    .box.r--4 button:hover {
+        background-color: var(--color-text);
+    }
+}
