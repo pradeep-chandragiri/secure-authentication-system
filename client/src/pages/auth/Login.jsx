@@ -1,52 +1,88 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import AppBanner from '../../components/AppBanner.jsx'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import AppBanner from '../../components/AppBanner.jsx';
+import GlobalError from '../../components/GlobalError.jsx';
+
+import { validateLogin } from '../../validators/loginValidator.js';
+import { loginUser } from '../../services/authService.js';
+
+import useAuth from '../../hooks/useAuth.js';
+
 
 function Login() {
 
     const navigate = useNavigate();
+
+    const { setUser } = useAuth();
 
     const [formData, setFormData] = useState({
         identifier: "",
         password: ""
     });
 
-    const [errors, setErrors]     = useState({});
-    const [isLoading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({})
+    const [isLoading, setLoading] = useState(false)
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-        setErrors({ ...errors, [name]: "" });
-    };
+
+        const { name, value } = e.target
+
+        setFormData(prev => ({ ...prev, [name]: value }))
+        setErrors(prev => ({ ...prev, [name]: "", api: "" }))
+        
+    }
 
     const validate = () => {
-        const newErrors = {};
 
-        if (!formData.identifier.trim()) newErrors.identifier = "Email or username is required";
-        if (!formData.password.trim())   newErrors.password   = "Password is required";
+        const newErrors = validateLogin(formData)
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!validate()) return;
 
-        setLoading(true);
+        e.preventDefault()
+        if (!validate()) return
+        setLoading(true)
+
         try {
-            // TODO: call login API
-            navigate('/dashboard');
+
+            const payload = {
+                identifier: formData.identifier.trim(),
+                password: formData.password
+            }
+
+            const data = await loginUser(payload)
+
+            // setting authenticated user
+            setUser(data.user)
+
+            // redirect
+            navigate('/profile')
+
         } catch (err) {
-            // TODO: handle API errors
+
+            const field = err?.response?.data?.field;
+            const message = err?.response?.data?.message || 'Something went wrong';
+
+            if (field) {
+                setErrors(prev => ({ ...prev, [field]: message }));
+            } else {
+                setErrors(prev => ({ ...prev, api: message }));
+            }
+
         } finally {
             setLoading(false);
         }
-    };
+
+    }
 
     return (
         <div id="LoginPage">
+
+            <GlobalError message={errors.api} onHide={() => setErrors(prev => ({ ...prev, api: '' }))} />
 
             <AppBanner />
 
@@ -57,7 +93,6 @@ function Login() {
                         <h3>Sign in</h3>
                         <p>Welcome back. Sign in to access your account.</p>
                     </div>
-
                     <form className="loginForm" onSubmit={handleSubmit}>
 
                         <div className={`field ${errors.identifier ? "error" : ""}`}>

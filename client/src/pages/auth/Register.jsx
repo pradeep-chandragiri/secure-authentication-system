@@ -1,57 +1,92 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppBanner from '../../components/AppBanner.jsx'
+import GlobalError from '../../components/GlobalError.jsx'
+import { validateRegister } from '../../validators/RegisterValidator.js'
+import { registerUser } from '../../services/authService.js'
 
 function Register() {
 
-    const navigate = useNavigate();
+    const navigate = useNavigate()
 
     const [formData, setFormData] = useState({
         name: "",
         username: "",
         email: "",
         password: ""
-    });
+    })
 
-    const [errors, setErrors]     = useState({});
-    const [isLoading, setLoading] = useState(false);
+    const [errors, setErrors]     = useState({})
+    const [isLoading, setLoading] = useState(false)
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-        setErrors({ ...errors, [name]: "" });
+        setFormData({ ...formData, [name]: value })
+        setErrors(prev => ({ ...prev, [name]: "" }));
     };
 
     const validate = () => {
-        const newErrors = {};
 
-        if (!formData.name.trim())     newErrors.name     = "Full name is required";
-        if (!formData.username.trim()) newErrors.username = "Username is required";
-        if (!formData.email.trim())    newErrors.email    = "Email is required";
-        if (!formData.password.trim()) newErrors.password = "Password is required";
+        const newErrors = validateRegister(formData);
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
+
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!validate()) return;
 
+        e.preventDefault();
+
+        if (!validate()) return;
         setLoading(true);
+
         try {
-            // TODO: call register API
-            navigate('/verify-email', { state: { email: formData.email } });
+            
+            // Payload
+            const payload = {
+                name: formData.name.trim(),
+                username: formData.username.trim(),
+                email: formData.email.trim(),
+                password: formData.password
+            }
+
+            // API Call
+            const data = await registerUser(payload)
+
+            navigate('/verify-email', {
+                state: { 
+                    email: formData.email 
+                }
+            })
+
         } catch (err) {
-            // TODO: handle API errors
+            
+            console.error(err);
+            const field = err.response?.data?.field;
+            const message = err.response?.data?.message || "Something went wrong";
+            
+            if (field) {
+                setErrors((prev) => ({
+                    ...prev,
+                    [field]: message
+                }));
+            } else {
+                setErrors((prev) => ({
+                    ...prev,
+                    api: message
+                }));
+            }
+
         } finally {
             setLoading(false);
         }
-    };
+
+    }
 
     return (
         <div id="registerPage">
-
+            <GlobalError message={errors.api} onHide={() => setErrors(prev => ({ ...prev, api: '' }))} />
             <AppBanner />
 
             <div className="appContainer">

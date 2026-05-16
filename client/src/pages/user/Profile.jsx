@@ -1,43 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { getUserActivity } from '../../services/userService.js';
+
 import AvatarUpload from '../../components/AvatarUpload.jsx';
+import useAuth from '../../hooks/useAuth.js';
+import SplashScreen from '../splashscreen/SplashScreen.jsx';
 
 function Profile() {
     const navigate = useNavigate();
+    const { user, setUser, loading } = useAuth();
+    const [activities, setActivities] = useState([]);
 
-    const user = {
-        name: 'Pradeep Chandragiri',
-        username: 'pradeep',
-        email: 'pradeep@example.com',
-        joinedAt: 'May 2026',
-        verified: true,
-        profilePic: 'https://i.pravatar.cc/200?img=12'
+    // Loading state
+    if (loading) {
+        return <SplashScreen />;
     }
-    
-    const [previewImage, setPreviewImage] = useState(user.profilePic)
 
-    const activities = [
-        {
-            title: 'Password changed',
-            description: 'Your account password was updated successfully.',
-            time: '2h ago'
-        },
-        {
-            title: 'Logged in from Chrome on Windows',
-            description: 'A new login session was detected from Vijayawada.',
-            time: 'Yesterday'
-        },
-        {
-            title: 'Updated profile information',
-            description: 'Your profile details were edited and saved.',
-            time: '3 days ago'
-        },
-        {
-            title: 'Email address verified',
-            description: 'Your email verification process was completed.',
-            time: 'Last week'
+    // Safety check
+    if (!user) {
+        return <p>User not found.</p>;
+    }
+
+    const [previewImage, setPreviewImage] = useState(user.profilePic || 'https://i.pravatar.cc/200?img=12');
+
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                const data = await getUserActivity();
+                setActivities(data.data || []);
+            } catch (error) {
+                console.error(error);
+            }
         }
-    ]
+        fetchActivities();
+    }, []);
+
+    const formattedDate = `${(d => d + (d > 3 && d < 21 ? 'th' : ['th','st','nd','rd'][d % 10] || 'th'))(new Date(user.created_at).getDate())} ${new Date(user.created_at).toLocaleString('en-US', { month: 'long' })}`
 
     return (
         <div id="profilePage">
@@ -48,7 +47,8 @@ function Profile() {
                     <div className="profileHero">
 
                         <AvatarUpload
-                                user={user}
+                            user={user}
+                            setUser={setUser}
                             previewImage={previewImage}
                             setPreviewImage={setPreviewImage}
                         />
@@ -62,7 +62,7 @@ function Profile() {
                                     Verified Account
                                 </span>
                                 <span className="metaDivider"></span>
-                                <span> Joined {user.joinedAt} </span>
+                                <span> Joined {formattedDate} </span>
                             </div>
                         </div>
                     </div>
@@ -116,8 +116,8 @@ function Profile() {
 
                                     <div className="activityContent">
                                         <div className="activityRow">
-                                            <h4>{activity.title}</h4>
-                                            <span className="activityTime">{activity.time}</span>
+                                            <h4>{activity.action}</h4>
+                                            <span className="activityTime">{activity.initiated_at}</span>
                                         </div>
                                         <p>{activity.description}</p>
                                     </div>

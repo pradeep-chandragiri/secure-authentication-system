@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppBanner from '../../components/AppBanner.jsx'
+import GlobalError from '../../components/GlobalError.jsx';
+import { passwordValidate } from '../../validators/RegisterValidator.js';
+import { resetPassword } from '../../services/authService.js';
 
 function ResetPassword() {
 
@@ -9,6 +12,7 @@ function ResetPassword() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setLoading] = useState(false);
+    const [success, setSuccess] = useState('');
 
     const handleChange = (e) => {
         setPassword(e.target.value);
@@ -17,43 +21,52 @@ function ResetPassword() {
 
     const validate = () => {
 
-        if (!password.trim()) {
-            setError('New password is required');
+        const validationError = passwordValidate(password.trim());
+        if (validationError) {
+            setError(validationError);
             return false;
         }
-
-        if (password.length < 8) {
-            setError('Password must be at least 8 characters');
-            return false;
-        }
-
         return true;
-    };
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validate()) return;
+        const cleanedPassword = password.trim();
+        const validationError = passwordValidate(cleanedPassword);
+
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
 
         setLoading(true);
 
         try {
 
-            // TODO:
-            // Send reset token + new password to backend
-
-            navigate('/login');
+            await resetPassword({ password: cleanedPassword });
+            setSuccess('Password reset successfully! Redirecting to sign in...');
 
         } catch (err) {
-            setError('Failed to reset password');
+            setError(err?.response?.data?.message || 'Failed to reset password. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     return (
         <div id="resetPasswordPage">
 
+            <GlobalError
+                message={error}
+                onHide={() => setError('')}
+            />
+
+            <GlobalError
+                message={success}
+                type="success"
+                onHide={() => navigate('/login')}
+            />
             <AppBanner />
 
             <div className="appContainer">

@@ -1,21 +1,61 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import AppBanner from '../../components/AppBanner.jsx'
+import { verifyEmail } from '../../services/authService.js'
 
 const REDIRECT_DELAY = 10;
 
 function EmailVerified() {
 
     const navigate  = useNavigate();
+
+    const [loading, setLoading] = useState(false)
     const [count, setCount] = useState(REDIRECT_DELAY);
+    const [status, setStatus] = useState({
+        success: false,
+        message: ""
+    });
+
+    // Verify Logic
+    const { token } = useParams();
 
     useEffect(() => {
+        const handleVerification = async () => {
+            setLoading(true)
+            
+            try {
+                const data = await verifyEmail(token);
+                
+                setStatus({
+                    success: true,
+                    message: response.data.message || "Email verified successfully"
+                });
+
+            } catch (err) {
+                setStatus({ success: false, message: err.response?.data?.message || "Verification failed" });
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        if (token) {
+            handleVerification();
+        }
+    }, [token]);
+
+    useEffect(() => {
+
         if (count === 0) {
             navigate('/login');
             return;
         }
-        const timer = setTimeout(() => setCount(c => c - 1), 1000);
+
+        const timer = setTimeout(() => {
+            setCount(c => c - 1);
+        }, 1000);
+
         return () => clearTimeout(timer);
+
     }, [count, navigate]);
 
     return (

@@ -5,27 +5,8 @@ import AppBanner from '../../components/AppBanner.jsx'
 function VerifyEmail() {
 
     const location = useLocation();
-    const navigate = useNavigate();
 
     const email = location.state?.email || null;
-
-    const [resendStatus, setResendStatus] = useState('idle'); // 'idle' | 'sending' | 'sent'
-
-    const handleResend = async () => {
-        if (resendStatus !== 'idle') return;
-        setResendStatus('sending');
-
-        // TODO: call resend verification email API
-        await new Promise(resolve => setTimeout(resolve, 1000)); // remove when API is wired
-
-        setResendStatus('sent');
-    };
-
-    const resendLabel = {
-        idle:    'Resend verification email',
-        sending: 'Sending...',
-        sent:    'Email sent!',
-    }[resendStatus];
 
     return (
         <div id="verifyEmailPage">

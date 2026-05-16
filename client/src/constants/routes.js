@@ -3,7 +3,7 @@ const routes = {
     home: "/",
     register: "/register",
     verifyEmail: "/verify-email",
-    emailVerified: "/email-verified",
+    emailVerified: "/email-verified/:token",
     login: "/login",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password",

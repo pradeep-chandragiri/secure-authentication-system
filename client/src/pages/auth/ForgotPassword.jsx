@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppBanner from '../../components/AppBanner.jsx'
+import GlobalError from '../../components/GlobalError.jsx';
+import { forgotPassword } from '../../services/authService.js';
 
 function ForgotPassword() {
 
-    const navigate = useNavigate();
+    const navigate = useNavigate()
 
     const [identifier, setIdentifier] = useState('');
     const [error,      setError]      = useState('');
     const [isLoading,  setLoading]    = useState(false);
+    const [success, setSuccess] = useState('');
 
     const handleChange = (e) => {
         setIdentifier(e.target.value);
@@ -20,33 +23,19 @@ function ForgotPassword() {
             setError('Email or username is required');
             return false;
         }
-
         return true;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validate()) return;
 
         setLoading(true);
-
         try {
-
-            // TODO:
-            // Generate reset token from backend
-            
-
-            // Redirect to reset password page
-            navigate('/reset-password', {
-                state: {
-                    identifier
-                    // token: response.data.token
-                }
-            });
-
+            await forgotPassword(identifier.trim());
+            setSuccess('Account verified! Taking you to reset your password...');
         } catch (err) {
-            setError('Something went wrong. Please try again.');
+            setError(err?.response?.data?.message || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -55,6 +44,12 @@ function ForgotPassword() {
     return (
         <div id="forgotPasswordPage">
 
+            <GlobalError message={error} onHide={() => setError('')} />
+            <GlobalError
+                message={success}
+                type="success"
+                onHide={() => navigate('/reset-password')}
+            />
             <AppBanner />
 
             <div className="appContainer">

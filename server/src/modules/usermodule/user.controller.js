@@ -26,7 +26,7 @@ export const get_profile = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            data: user
+            user
         })
 
     } catch (error) {
@@ -121,12 +121,12 @@ export const update_profile = async (req, res) => {
 
         await db.query(`UPDATE users SET name = ?, username = ?, email = ? WHERE userId = ?`, [name, sanitized_username, sanitized_email, userId])
 
-        await db.query(`INSERT INTO user_activity_logs (userId, account_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'ACCOUNT_UPDATE', 'Account details updated successfully', req.ip ? req.ip : "Unknown", req.header['user-agent'] ? req.header['user-agent'] : "Unknown" ])
+        await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'ACCOUNT_UPDATE', 'Account details updated successfully', req.ip ? req.ip : "Unknown", req.headers['user-agent'] ? req.headers['user-agent'] : "Unknown" ])
 
         return res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
-            data: {
+            user: {
                 name,
                 username: sanitized_username,
                 email: sanitized_email,
@@ -152,7 +152,7 @@ export const get_user_activity = async (req, res) => {
 
         const userId = req.user.userId
 
-        const [rows] = await db.query(`SELECT action_type, description, ip_address, user_agent, created_at FROM user_activity_logs WHERE userId = ?`, [userId])
+        const [rows] = await db.query(`SELECT action_type, description, ip_address, user_agent, created_at FROM user_activity_logs WHERE userId = ? ORDER BY created_at DESC`, [userId])
 
         // User not found
         if (rows.length === 0){

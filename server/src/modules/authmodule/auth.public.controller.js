@@ -253,7 +253,7 @@ export const login = async (req, res) => {
 
         // TOKEN CREATION
         const token = jwt.sign(
-            { userId: user.userId, username: user.username, email: user.email }, // PAYLOAD
+            { userId: user.userId }, // PAYLOAD
             process.env.JWT_SECRET_KEY, // JWT SECRET
             { expiresIn: process.env.JWT_EXPIRES_IN } // EXPIRATION TIME
         )
@@ -261,7 +261,7 @@ export const login = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         
@@ -270,7 +270,13 @@ export const login = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Successfully signed in to your account.'
+            message: 'Successfully signed in to your account.',
+            user: {
+                userId: user.userId,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+            }
         })
         
     } catch (error) {
@@ -304,7 +310,7 @@ export const forgot_password = async (req, res) => {
         if (rows.length === 0){
             return res.status(400).json({
                 success: false,
-                message: 'Invalid credentials. Verify your credentials and try again.'
+                message: `We couldn't find an account matching that email or username.`
             })
         }
 

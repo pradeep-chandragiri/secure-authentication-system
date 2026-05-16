@@ -23,17 +23,21 @@ export const sendVerifyEmail = async ({ email, verify_token }) => {
         to: email,
         subject: 'Verify Your Email Address',
         html: loadTemplate('verify-email', {
-            verifyURL: `http://localhost:5000/api/v1/auth/accounts/verify/email?token=${verify_token}`,
+            verifyURL: `${process.env.CLIENT_URL}/email-verified/${verify_token}`,
         }),
     })
 }
 
+
 export const sendAccountCreatedEmail = async ({ email }) => {
+    const loginURL = `${process.env.CLIENT_URL}/login`;
     await transporter.sendMail({
         from: process.env.MAIL_USER,
         to: email,
         subject: 'Account Created Successfully',
-        html: loadTemplate('account-created'),
+        html: loadTemplate('account-created', {
+            loginURL
+        }),
     })
 }
 

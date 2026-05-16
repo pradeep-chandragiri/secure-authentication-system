@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import useAuth from '../../hooks/useAuth.js'
+import { UpdateProfileInfo } from '../../services/userService.js'
+import GlobalError from '../../components/GlobalError.jsx'
 
 function UpdateProfile() {
 
     const navigate = useNavigate()
+
+    const { user, setUser } = useAuth()
+
     const [formData, setFormData] = useState({
         name: '',
         username: '',
@@ -11,6 +17,21 @@ function UpdateProfile() {
     })
     const [errors, setErrors] = useState({})
     const [isLoading, setLoading] = useState(false)
+    const [success, setSuccess] = useState('')
+
+    // Prefill User Data
+    useEffect(() => {
+
+        if (user) {
+
+            setFormData({
+                name: user.name || '',
+                username: user.username || '',
+                email: user.email || ''
+            })
+        }
+
+    }, [user])
 
     const handleChange = (e) => {
 
@@ -18,6 +39,7 @@ function UpdateProfile() {
 
         setFormData(prev => ({ ...prev, [name]: value }))
         setErrors(prev => ({ ...prev, [name]: '' }))
+        setSuccess('')
     }
 
     const validate = () => {
@@ -46,9 +68,27 @@ function UpdateProfile() {
         try {
 
             // API
+            const data = await UpdateProfileInfo(formData)
+
+            if (data.success) {
+
+                // Update Global User
+                setUser(data.user)
+                setSuccess('Profile updated successfully.')
+                // Navigate
+                navigate('/profile')
+            }
+
 
         } catch (err) {
-            console.log(err)
+            const field = err?.response?.data?.field;
+            const message = err?.response?.data?.message || 'Something went wrong';
+
+            if (field) {
+                setErrors(prev => ({ ...prev, [field]: message }));
+            } else {
+                setErrors(prev => ({ ...prev, api: message }));
+            }
         } finally {
             setLoading(false)
         }
@@ -56,6 +96,14 @@ function UpdateProfile() {
 
     return (
         <div id="updateProfilePage">
+
+            <GlobalError message={errors.api} onHide={() => setError('')} />
+            <GlobalError
+                message={success}
+                type="success"
+                onHide={() => navigate('/profile')}
+            />
+
             <div className="appContainer">
                 <div className="updateProfileContainer">
                     <div className="updateProfileTop">

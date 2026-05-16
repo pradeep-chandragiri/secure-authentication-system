@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChangePass } from '../../services/userService.js'
 
 function ChangePassword() {
 
@@ -10,6 +11,7 @@ function ChangePassword() {
         newPassword: ''
     })
     const [errors, setErrors] = useState({})
+    const [success, setSuccess] = useState('')
     const [isLoading, setLoading] = useState(false)
 
     const handleChange = (e) => {
@@ -17,6 +19,7 @@ function ChangePassword() {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
         setErrors(prev => ({ ...prev, [name]: '' }))
+        setSuccess('')
     }
 
     const validate = () => {
@@ -39,13 +42,59 @@ function ChangePassword() {
         e.preventDefault()
         if (!validate()) return
         setLoading(true)
+        setErrors({})
+        setSuccess('')
 
         try {
 
-            // API
+            const payload = {
+                password: formData.oldPassword,
+                newPassword: formData.newPassword
+            }
 
+            // API
+            const data = await ChangePass(payload)
+
+            if (data.success) {
+
+                setSuccess(data.message)
+
+                setFormData({
+                    oldPassword: '',
+                    newPassword: ''
+                })
+
+                setTimeout(() => {
+                    navigate('/profile')
+                }, 1500)
+            }
         } catch (err) {
-            console.log(err)
+            const message =
+                err.response?.data?.message ||
+                'Something went wrong'
+
+            // Backend message handling
+            if (message.toLowerCase().includes('current password')) {
+
+                setErrors({
+                    oldPassword: message
+                })
+
+            } else if (
+                message.toLowerCase().includes('new password')
+            ) {
+
+                setErrors({
+                    newPassword: message
+                })
+
+            } else {
+
+                setErrors({
+                    general: message
+                })
+            }
+
         } finally {
             setLoading(false)
         }

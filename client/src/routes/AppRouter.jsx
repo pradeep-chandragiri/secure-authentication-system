@@ -42,9 +42,9 @@ function AppRouter() {
                 <Route path={ routes.resetPassword } element={ <ResetPassword /> } />
 
                 {/* Protect Routes */}
-                <Route path={ routes.profile } element={ <Profile /> } />
-                <Route path={ routes.updateProfile } element={ <UpdateProfile /> } />
-                <Route path={ routes.changePassword } element={ <ChangePassword /> } />
+                <Route path={ routes.profile } element={ <ProtectedRoute><Profile /></ProtectedRoute> } />
+                <Route path={ routes.updateProfile } element={ <ProtectedRoute><UpdateProfile /></ProtectedRoute> } />
+                <Route path={ routes.changePassword } element={ <ProtectedRoute><ChangePassword /></ProtectedRoute> } />
                 
                 {/* $404 */}
                 <Route path="*" element={ <NotFound /> } />
