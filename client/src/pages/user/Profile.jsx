@@ -120,6 +120,7 @@ function Profile() {
                                             <span className="activityTime">{activity.initiated_at}</span>
                                         </div>
                                         <p>{activity.description}</p>
+                                        <p>{activity.user_agent}</p>
                                     </div>
 
                                 </div>
