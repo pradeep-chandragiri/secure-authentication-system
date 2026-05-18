@@ -74,13 +74,21 @@ export const delete_account = async (req, res) => {
         }
 
         await db.query(`INSERT INTO user_activity_logs (userId, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`, [userId, 'ACCOUNT_DELETION', 'Accound deleted successfully', req.ip || 'Unknown', req.headers['user-agent'] || 'Unknown'])
+       
+        // Add this before sending the email
+        const [userRows] = await db.query(`SELECT email FROM users WHERE userId = ?`, [userId])
+        const email = userRows[0]?.email
+
+        if (!email) {
+            return res.status(404).json({ success: false, message: 'User not found' })
+        }
+
+        await sendAccountedDeletedEmail({ email })
 
         await db.query(`DELETE FROM users WHERE userId = ?`, [userId])
         await db.query(`DELETE FROM user_activity_logs WHERE userId = ?`, [userId])
         
         res.clearCookie('token')
-
-        await sendAccountedDeletedEmail({ email: req.user.email })
 
         return res.status(200).json({
             success: true,
@@ -88,6 +96,7 @@ export const delete_account = async (req, res) => {
         })
 
     } catch (error) {
+        console.error('Delete account error:', error.message)
         return res.status(500).json({
             success: false,
             message: error.message

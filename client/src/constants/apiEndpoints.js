@@ -14,7 +14,8 @@ export const apiEndpoints = {
         updateUser: '/accounts/profile',
         updateDp: '/accounts/new/dp',
         deleteDp: '/accounts/delete/dp',
-        changePassword: '/accounts/password/change'
+        changePassword: '/accounts/password/change',
+        deleteAccount: '/v1/auth/accounts/'
     }
 }
 

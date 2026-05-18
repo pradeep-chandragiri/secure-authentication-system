@@ -42,6 +42,8 @@ export const UpdateProfilePic = async (formData) => {
             withCredentials: true
         }
     )
+
+    return response.data
 }
 
 export const DeleteProfilePic = async (formData) => {
@@ -51,6 +53,8 @@ export const DeleteProfilePic = async (formData) => {
             withCredentials: true
         }
     )
+
+    return response.data
 }
 
 export const UpdateProfileInfo = async (formData) => {
@@ -62,9 +66,17 @@ export const UpdateProfileInfo = async (formData) => {
 }
 
 export const ChangePass = async (payload) => {
-    const response = await api.put(
+    const response = await api.post(
         apiEndpoints.user.changePassword,
         payload
     )
+    return response.data
+}
+
+export const DeleteUser = async () => {
+    const response = await api.delete(
+        apiEndpoints.user.deleteAccount
+    )
+
     return response.data
 }

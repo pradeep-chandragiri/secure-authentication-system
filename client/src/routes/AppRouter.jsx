@@ -19,7 +19,8 @@ import ChangePassword from '../pages/user/ChangePassword.jsx'
 import NotFound from '../pages/NotFound.jsx'
 
 // Protected route
-import ProtectedRoute from '../routes/ProtectedRoute.jsx'
+import GuestRoute from './GuestRoute.jsx'
+import ProtectedRoute from './ProtectedRoute.jsx'
 
 // route constants
 import routes from '../constants/routes.js'
@@ -34,12 +35,12 @@ function AppRouter() {
                 <Route path="/" element={ <Home /> } />
 
                 {/* Public Routes */}
-                <Route path={ routes.register } element={ <Register /> } />
-                <Route path={ routes.verifyEmail } element={ <VerifyEmail /> } />
-                <Route path={ routes.emailVerified } element={ <EmailVerified /> } />
-                <Route path={ routes.login } element={ <Login /> } />
-                <Route path={ routes.forgotPassword } element={ <ForgotPassword /> } />
-                <Route path={ routes.resetPassword } element={ <ResetPassword /> } />
+                <Route path={ routes.register } element={ <GuestRoute><Register /></GuestRoute> } />
+                <Route path={ routes.verifyEmail } element={ <GuestRoute><VerifyEmail /></GuestRoute> } />
+                <Route path={ routes.emailVerified } element={ <GuestRoute><EmailVerified /></GuestRoute> } />
+                <Route path={ routes.login } element={ <GuestRoute><Login /></GuestRoute> } />
+                <Route path={ routes.forgotPassword } element={ <GuestRoute><ForgotPassword /></GuestRoute> } />
+                <Route path={ routes.resetPassword } element={ <GuestRoute><ResetPassword /></GuestRoute> } />
 
                 {/* Protect Routes */}
                 <Route path={ routes.profile } element={ <ProtectedRoute><Profile /></ProtectedRoute> } />

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DeleteProfilePic, UpdateProfilePic } from '../services/userService.js'
+import GlobalError from './GlobalError.jsx'
 
 function AvatarUpload({ user, setUser, previewImage, setPreviewImage }) {
 
@@ -51,11 +52,10 @@ function AvatarUpload({ user, setUser, previewImage, setPreviewImage }) {
             const data = await UpdateProfilePic(formData)
 
             if (data.success) {
-                setPreviewImage(data.user.dp)
-                setShowPhotoSheet(false)
+                setUser(prev => ({ ...prev, dp: data.url }))
+                window.location.reload()
             }
             
-            navigate('/profile')
 
         } catch (error) {
 
@@ -71,22 +71,30 @@ function AvatarUpload({ user, setUser, previewImage, setPreviewImage }) {
 
     // Remove Profile
     const handleRemoveProfile = async () => {
+        setLoading(true)
         try {
             const data = await DeleteProfilePic()
 
             if (data.success) {
-                setPreviewImage(data.user.dp)
+                setUser(prev => ({ ...prev, dp: null }))
+                window.location.reload()
             }
             
-            navigate('/profile')
         } catch (error) {
-            console.log(error)
+            setError(error.response?.data?.message || 'Remove failed.')
+        } finally {
+            setLoading(false)
         }
     }
 
     return (
         <>
-
+            {error && 
+                <GlobalError
+                    message={error}
+                    onHide={() => setError('')}
+                />
+            }
             {/* Avatar */}
             <div className="profileAvatarWrapper">
                 <img src={user.dp ? user.dp : previewImage} alt={user.name} className="profileAvatar" />
@@ -132,7 +140,9 @@ function AvatarUpload({ user, setUser, previewImage, setPreviewImage }) {
                         {
                             user.dp && 
                             <button type="button" className="removePhotoBtn" onClick={handleRemoveProfile}>
-                                Remove Profile
+                                {
+                                    loading ? 'Removing...' : 'Remove Photo'
+                                }
                             </button>
                         }
                     </div>

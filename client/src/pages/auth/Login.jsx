@@ -14,7 +14,7 @@ function Login() {
 
     const navigate = useNavigate();
 
-    const { setUser } = useAuth();
+    const { setUser, setIsLoggedIn } = useAuth();
 
     const [formData, setFormData] = useState({
         identifier: "",
@@ -58,6 +58,7 @@ function Login() {
 
             // setting authenticated user
             setUser(data.user)
+            setIsLoggedIn(true)
 
             // redirect
             navigate('/profile')
